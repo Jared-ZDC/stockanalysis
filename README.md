@@ -1,1 +1,2 @@
 # stockanalysis
+![Uploading image.png…]()
