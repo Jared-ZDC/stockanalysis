@@ -11,7 +11,7 @@ debug = True
 
 class cmp_opt:
     """
-    定义标的的一些常用属性，比如pe_ttm/total_mv/pb/dv_ratio/turnover_rate/ema5/ema10/ema30/ema300 主要是每日指标
+    定义标的的一些常用属性,比如pe_ttm/total_mv/pb/dv_ratio/turnover_rate/ema5/ema10/ema30/ema300 主要是每日指标
     """
     #标的代码
     ts_code : str = ""
@@ -108,6 +108,7 @@ if __name__ == "__main__":
             ts = cmp_opt()
             ts.ts_code = ts_value['ts_code']
             ts.total_mv = (lamada x : float(x) if(x != None) else 0)(ts_value['total_mv'])
+
 
 
 
