@@ -4,6 +4,7 @@
 # coding=utf-8
 # 导入tushare
 import tushare as ts
+import time
 
 debug = True
 
@@ -35,9 +36,7 @@ class cmp_opt:
     score : float = 0.0
 
     def __str__( self ):
-        return f"ts_code = {self.ts_code}, total_mv={self.total_mv}, pe_ttm={self.pe_ttm}, \
-                pe={self.pe}, pb={self.pb}, turnover_rate={self.turnover_rate}, volume_ratio={self.volume_ratio}, \
-                dv_ttm={self.dv_ttm}, date={self.date}, score={self.score}"
+        return f"ts_code = {self.ts_code}, total_mv={self.total_mv}, pe_ttm={self.pe_ttm}, pe={self.pe}, pb={self.pb}, turnover_rate={self.turnover_rate}, volume_ratio={self.volume_ratio}, dv_ttm={self.dv_ttm}, date={self.date}, score={self.score}"
 
 def dprint(msg : str) :
     """
@@ -82,6 +81,8 @@ def get_hz300_company(start_date_ : str = "",end_date_ : str = "",market_cap_min
     index = 0
     index_len = len(con_code)
     df_daily_basic_dict : dict = {}
+    print("checking daily_basic for hz300")
+    t0 = time.time_ns()
     while index < index_len:
         #获取当前code公司估值
         df_daily_basic = pro.daily_basic(ts_code=con_code[index], trade_date=start_date_, fields=
@@ -95,7 +96,8 @@ def get_hz300_company(start_date_ : str = "",end_date_ : str = "",market_cap_min
         if total_mv >= market_cap_min and total_mv <= market_cap_max:
             df_daily_basic_dict[con_code[index]] = df_daily_basic
         index += 1
-    
+    t1 = time.time_ns()
+    print(f"checking daily_basic for hz300 finish, time cose {t1 - t0}ns")
     return df_daily_basic_dict
     #print(index_stock_info_df)
     
@@ -113,7 +115,6 @@ if __name__ == "__main__":
     print(f"more than 2000yi : {len(hz300)}")
 
     for ts_code,ts_value in hz300.items():
-        print(f"{ts_value}")
         #解析数据到对象中，对象存放在dict中，以ts_code作为索引
         ts = cmp_opt()
         ts.ts_code = ts_value['ts_code'].iloc[0]
