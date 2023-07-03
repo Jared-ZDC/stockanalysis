@@ -4,6 +4,7 @@
 # coding=utf-8
 # 导入tushare
 import tushare as ts
+import thread
 
 debug = True
 
@@ -39,14 +40,15 @@ class cmp_opt:
                 pe={self.pe}, pb={self.pb}, turnover_rate={self.turnover_rate}, volume_ratio={self.volume_ratio}, \
                 dv_ttm={self.dv_ttm}, date={self.date}, score={self.score}"
 
-def debug_print(msg : str) :
+def dprint(msg : str) :
     """
-    仅作为debug打印使用
+        仅作为debug打印到消息队列中使用
     """
     if debug:
         print(msg)
     else:
         pass
+
 
 def none2zero(var : object) -> float:
     """
@@ -98,7 +100,6 @@ def get_hz300_company(start_date_ : str = "",end_date_ : str = "",market_cap_min
     return df_daily_basic_dict
     #print(index_stock_info_df)
     
-
 if __name__ == "__main__":
     #初始化token信息
     init_context()
@@ -127,6 +128,7 @@ if __name__ == "__main__":
         ts.volume_ratio = none2zero(ts_value['volume_ratio'].iloc[0])
         ts_target[ts.ts_code] = ts
         print(ts)
+
 
 
 
