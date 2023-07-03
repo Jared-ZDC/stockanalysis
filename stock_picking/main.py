@@ -67,7 +67,6 @@ def get_hz300_company(start_date_ : str = "",end_date_ : str = "",market_cap_min
     pro = ts.pro_api()
     #月度接口, 获取日期内的成分股
     df = pro.index_weight(index_code='399300.SZ', start_date = start_date_, end_date = end_date_)
-    index_code = df['index_code']
     con_code = df['con_code']
     
     index = 0
@@ -107,7 +106,9 @@ if __name__ == "__main__":
             #解析数据到对象中，对象存放在dict中，以ts_code作为索引
             ts = cmp_opt()
             ts.ts_code = ts_value['ts_code']
-            ts.total_mv = (lamada x : float(x) if(x != None) else 0)(ts_value['total_mv'])
+            fc = lambda x : float(x) if x else 0
+            ts.total_mv = fc(ts_value['total_mv'])
+
 
 
 
