@@ -4,7 +4,6 @@
 # coding=utf-8
 # 导入tushare
 import tushare as ts
-import thread
 
 debug = True
 
