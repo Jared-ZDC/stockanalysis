@@ -97,7 +97,7 @@ def get_hz300_company(start_date_ : str = "",end_date_ : str = "",market_cap_min
             df_daily_basic_dict[con_code[index]] = df_daily_basic
         index += 1
     t1 = time.time_ns()
-    print(f"checking daily_basic for hz300 finish, time cose {t1 - t0}ns")
+    print(f"checking daily_basic for hz300 finish, time cose {(t1 - t0)/1000}ms")
     return df_daily_basic_dict
     #print(index_stock_info_df)
     
@@ -114,6 +114,8 @@ if __name__ == "__main__":
     #if debug :
     print(f"more than 2000yi : {len(hz300)}")
 
+    print("begin to add obj to ts_target")
+    t0 = time.time_ns()
     for ts_code,ts_value in hz300.items():
         #解析数据到对象中，对象存放在dict中，以ts_code作为索引
         ts = cmp_opt()
@@ -128,7 +130,20 @@ if __name__ == "__main__":
         ts.volume_ratio = none2zero(ts_value['volume_ratio'].iloc[0])
         ts_target[ts.ts_code] = ts
         print(ts)
+    t1 = time.time_ns()
+    print(f"finish add obj to ts_target,time cose {(t1-t0)/1000}ms")
+    
+    #按照市值进行排序，选择前10作为标的，进行加分
+    print("begin to sorted ts_target")
+    t0 = time.time_ns()
+    #排序后返回列表，列表内容（key,对象）
+    ts_target_sorted = sorted(ts_target.items(), key = lambda kv:(kv[1].total_mv), reverse=True)
+    t1 = time.time_ns()
+    print(f"finish sorted ts_target,time cose {(t1-t0)/1000}ms")
 
+    for ts in ts_target_sorted[:10]:
+        
+    
 
 
 
