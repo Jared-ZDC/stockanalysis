@@ -106,7 +106,7 @@ if __name__ == "__main__":
     init_context()
 
     #cmp_opt对象
-    ts_target : dict = {}
+    ts_target : dict[str, cmp_opt] = {}
 
     # 获取沪深300 市值过2000亿的公司
     hz300 = get_hz300_company(start_date_= "20230601" ,end_date_="20230631")
@@ -128,6 +128,7 @@ if __name__ == "__main__":
         ts.pe_ttm = none2zero(ts_value['pe_ttm'].iloc[0])
         ts.turnover_rate = none2zero(ts_value['turnover_rate'].iloc[0])
         ts.volume_ratio = none2zero(ts_value['volume_ratio'].iloc[0])
+        ts.score = 0
         ts_target[ts.ts_code] = ts
         print(ts)
     t1 = time.time_ns()
@@ -141,9 +142,16 @@ if __name__ == "__main__":
     t1 = time.time_ns()
     print(f"finish sorted ts_target,time cose {(t1-t0)/1000}ms")
 
-    for ts in ts_target_sorted[:10]:
-        
+    dprint(ts_target_sorted[:10])
+
+    index : int = 0
+    while index < 10:
+        ts_target[ts_target_sorted[index][0]].score += (100.0 - 10 * index)
+        index += 1
     
+    
+
+
 
 
 
