@@ -48,8 +48,14 @@ def get_hz300_company(start_date_ : str = "",end_date_ : str = "",market_cap_min
         #获取当前code公司估值
         df_daily_basic = pro.daily_basic(ts_code=con_code[index], trade_date=start_date_, fields=
                                          'ts_code,total_mv,pe,pe_ttm,pb,dv_ratio,dv_ttm,turnover_rate,volume_ratio')
-        print(f"df_daily_basic['total_mv'] = {df_daily_basic['total_mv']}")
-        if float(df_daily_basic['total_mv']) >= market_cap_min and float(df_daily_basic['total_mv']) <= market_cap_max:
+        #print(f"df_daily_basic['total_mv'] = {df_daily_basic['total_mv']},type = {type(df_daily_basic['total_mv'])},len = {len(df_daily_basic['total_mv'])}")
+        total_mv = 0.0
+        if len(df_daily_basic['total_mv']) == 0:
+            print(f"{con_code[index]} has no total_mv, total_mv = zero")
+        else:
+            total_mv = float(df_daily_basic['total_mv'])
+            
+        if total_mv >= market_cap_min and total_mv <= market_cap_max:
             df_daily_basic_dict[con_code[index]] = df_daily_basic
             #debug_print(f"{con_code[index],df_daily_basic['total_mv']}")
         index += 1
@@ -63,7 +69,7 @@ if __name__ == "__main__":
     init_context()
     
     # 获取沪深300 市值过1000亿的公司
-    hz300 = get_hz300_company(start_date_= "20150601" ,end_date_="20150702")
+    hz300 = get_hz300_company(start_date_= "20230601" ,end_date_="20230631")
     #查询一下市值1000亿的公司有哪些
     if debug :
         print(f"more than 2000yi : {len(hz300)}")
