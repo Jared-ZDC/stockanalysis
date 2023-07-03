@@ -149,7 +149,9 @@ if __name__ == "__main__":
         ts_target[ts_target_sorted[index][0]].score += (100.0 - 10 * index)
         index += 1
     
-    
+    #按照PE跟历史一年PE的高位值，低位值比例进行排序
+
+
 
 
 
