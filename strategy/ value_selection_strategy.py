@@ -5,7 +5,7 @@
 # 导入tushare
 import tushare as ts
 import time
-from localtushare import *
+from utils.localtushare import *
 import configparser
 import sys
 
