@@ -5,9 +5,12 @@
 # 导入tushare
 import tushare as ts
 import time
-from utils.localtushare import *
 import configparser
 import sys
+#sys.path.append("/workspaces/stockanalysis/utils")
+from utils.localtushare import *
+
+
 
 
 debug = True
@@ -117,7 +120,7 @@ if __name__ == "__main__":
     #初始化token信息
     init_context()
 
-    lts.initcache()
+    localtushare().initcache()
 
     #cmp_opt对象
     ts_target : dict[str, cmp_opt] = {}

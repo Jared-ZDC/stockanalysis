@@ -1,5 +1,8 @@
 {
     "python.analysis.extraPaths": [
-        "/workspaces/stockanalysis/utils"
+        "/workspaces/stockanalysis"
+    ],
+    "python.autoComplete.extraPaths": [
+        "/workspaces/stockanalysis"
     ]
 }
