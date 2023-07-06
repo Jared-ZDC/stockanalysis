@@ -92,7 +92,7 @@ def get_hz300_company(start_date_ : str = "",end_date_ : str = "",market_cap_min
     """
     lts = localtushare()
     #月度接口, 获取日期内的成分股
-    df = lts.index_weight(index_code='399300.SZ', start_date = start_date_, end_date = end_date_)
+    df = lts.index_weight(index_code='399300.SZ', start_date = start_date_, end_date = end_date_) 
     con_code = df['con_code']
     
     index = 0
