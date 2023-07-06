@@ -7,7 +7,7 @@ import tushare as ts
 import time
 import configparser
 import sys
-#sys.path.append("/workspaces/stockanalysis/utils")
+from strategy.ts_select import ts_select
 from utils.localtushare import *
 
 
@@ -72,8 +72,10 @@ def init_context() -> None:
     获取单例lts, 以及读取config配置文件, 设置token
     """
     lts = localtushare()
+    
     config = configparser.ConfigParser()
-    token = config.read(config.get('tushare', 'token'))
+    config.read('config/config.properties',encoding="utf-8")
+    token = config.get('tushare', 'token')
     if token == None or token == "":
         sys.exit("token get null for tushare, exit!!!!")
     lts.set_token(token)
@@ -116,57 +118,62 @@ def get_hz300_company(start_date_ : str = "",end_date_ : str = "",market_cap_min
     return df_daily_basic_dict
     #print(index_stock_info_df)
     
-if __name__ == "__main__":
-    #初始化token信息
-    init_context()
+class value_selection_strategy(ts_select):
 
-    localtushare().initcache()
+    def strategy_main(self) -> object:
+        """
+        策略主函数
+        """
+        #初始化token信息
+        init_context()
 
-    #cmp_opt对象
-    ts_target : dict[str, cmp_opt] = {}
+        localtushare().initcache()
 
-    # 获取沪深300 市值过2000亿的公司
-    hz300 = get_hz300_company(start_date_= "20230601" ,end_date_="20230631")
-    #查询一下市值1000亿的公司有哪些
-    #if debug :
-    print(f"more than 2000yi : {len(hz300)}")
+        #cmp_opt对象
+        ts_target : dict[str, cmp_opt] = {}
 
-    print("begin to add obj to ts_target")
-    t0 = time.time_ns()
-    for ts_code,ts_value in hz300.items():
-        #解析数据到对象中，对象存放在dict中，以ts_code作为索引
-        ts = cmp_opt()
-        ts.ts_code = ts_value['ts_code'].iloc[0]
-        ts.total_mv = none2zero(ts_value['total_mv'].iloc[0]) / 10000.0
-        ts.dv_ratio = none2zero(ts_value['dv_ratio'].iloc[0])
-        ts.dv_ttm = none2zero(ts_value['dv_ttm'].iloc[0])
-        ts.pb = none2zero(ts_value['pb'].iloc[0])
-        ts.pe = none2zero(ts_value['pe'].iloc[0])
-        ts.pe_ttm = none2zero(ts_value['pe_ttm'].iloc[0])
-        ts.turnover_rate = none2zero(ts_value['turnover_rate'].iloc[0])
-        ts.volume_ratio = none2zero(ts_value['volume_ratio'].iloc[0])
-        ts.score = 0
-        ts_target[ts.ts_code] = ts
-        print(ts)
-    t1 = time.time_ns()
-    print(f"finish add obj to ts_target,time cose {(t1-t0)/1000}ms")
-    
-    #按照市值进行排序，选择前10作为标的，进行加分
-    print("begin to sorted ts_target")
-    t0 = time.time_ns()
-    #排序后返回列表，列表内容（key,对象）
-    ts_target_sorted = sorted(ts_target.items(), key = lambda kv:(kv[1].total_mv), reverse=True)
-    t1 = time.time_ns()
-    print(f"finish sorted ts_target,time cose {(t1-t0)/1000}ms")
+        # 获取沪深300 市值过2000亿的公司
+        hz300 = get_hz300_company(start_date_= "20230601" ,end_date_="20230631")
+        #查询一下市值1000亿的公司有哪些
+        #if debug :
+        print(f"more than 2000yi : {len(hz300)}")
 
-    dprint(ts_target_sorted[:10])
+        print("begin to add obj to ts_target")
+        t0 = time.time_ns()
+        for ts_code,ts_value in hz300.items():
+            #解析数据到对象中，对象存放在dict中，以ts_code作为索引
+            ts = cmp_opt()
+            ts.ts_code = ts_value['ts_code'].iloc[0]
+            ts.total_mv = none2zero(ts_value['total_mv'].iloc[0]) / 10000.0
+            ts.dv_ratio = none2zero(ts_value['dv_ratio'].iloc[0])
+            ts.dv_ttm = none2zero(ts_value['dv_ttm'].iloc[0])
+            ts.pb = none2zero(ts_value['pb'].iloc[0])
+            ts.pe = none2zero(ts_value['pe'].iloc[0])
+            ts.pe_ttm = none2zero(ts_value['pe_ttm'].iloc[0])
+            ts.turnover_rate = none2zero(ts_value['turnover_rate'].iloc[0])
+            ts.volume_ratio = none2zero(ts_value['volume_ratio'].iloc[0])
+            ts.score = 0
+            ts_target[ts.ts_code] = ts
+            print(ts)
+        t1 = time.time_ns()
+        print(f"finish add obj to ts_target,time cose {(t1-t0)/1000}ms")
+        
+        #按照市值进行排序，选择前10作为标的，进行加分
+        print("begin to sorted ts_target")
+        t0 = time.time_ns()
+        #排序后返回列表，列表内容（key,对象）
+        ts_target_sorted = sorted(ts_target.items(), key = lambda kv:(kv[1].total_mv), reverse=True)
+        t1 = time.time_ns()
+        print(f"finish sorted ts_target,time cose {(t1-t0)/1000}ms")
 
-    index : int = 0
-    while index < 10:
-        ts_target[ts_target_sorted[index][0]].score += (100.0 - 10 * index)
-        index += 1
-    
-    #按照PE跟历史一年PE的高位值，低位值比例进行排序
+        dprint(ts_target_sorted[:10])
+
+        index : int = 0
+        while index < 10:
+            ts_target[ts_target_sorted[index][0]].score += (100.0 - 10 * index)
+            index += 1
+        
+        #按照PE跟历史一年PE的高位值，低位值比例进行排序
 
 
 
