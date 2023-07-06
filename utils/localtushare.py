@@ -93,9 +93,32 @@ class localtushare(object):
         @function : cache daily_basic
         @rewrite : 判断是否需要重写cache文件
         """
+
         filepath = self.g_cache_path + f"/{ts_code_}_{trade_date_}_{fields_}.csv"
+        df : pd.DataFrame = None
         if (not os.access(filepath, os.F_OK)) or (rewrite):
             df = self.tushareApi.daily_basic(ts_code=ts_code_, trade_date=trade_date_, fields=fields_)
-            df.to_csv()
+            df.to_csv(filepath)
+        else:
+            df = pd.read_csv(filepath)
+        return df
+
+    def index_weight(self, index_code_ : str, trade_date_ : str, start_date_ : str = "", end_date_ : str = "", rewrite : bool = False) -> pd.DataFrame :
+        """
+        @function : 接口：index_weight
+        @desc : 描述：获取各类指数成分和权重，月度数据 。
+        """
+        filepath = self.g_cache_path + f"/{index_code_}_{trade_date_}_{start_date_}_{end_date_}.csv"
+
+        df : pd.DataFrame = None
+
+        if (not os.access(filepath, os.F_OK)) or (rewrite):
+            df = self.tushareApi.index_weight(index_code =index_code_, trade_date=trade_date_, start_date=start_date_, end_date = end_date_)
+            df.to_csv(filepath)
+            return df
+        else :
+            df = pd.read_csv(filepath)
+
+        return df
 
     
