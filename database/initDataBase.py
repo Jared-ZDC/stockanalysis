@@ -22,5 +22,4 @@ def createTable(baseName : str, tableName : str,  table_consistant : dict) -> bo
 
 
 if __name__ == '__main__' :
-s
     print(f"create database")
