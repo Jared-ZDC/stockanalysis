@@ -21,7 +21,8 @@ class initDataBase:
                 user=user,
                 password=password,
                 charset='utf8',
-                autocommit= True
+                unix_socket="/tmp/mysql.sock"
+                # autocommit= True
             )
             self.my_cursor = self.mydb.cursor()
         except(Exception) as msg:
@@ -74,6 +75,42 @@ class initDataBase:
         except(Exception) as msg:
             print(msg)
             return False
+
+    def delDataBase(self,baseName:str)->bool:
+        '''
+        @func:删除数据库方法
+        :param baseName: 数据库名称
+        :return: bool
+        '''
+
+        if not baseName:
+            print('数据库名称不能为空')
+        try:
+            sql = f"drop database {baseName};"
+            self.my_cursor.execute(sql)
+            return True
+        except(Exception) as msg:
+            return False
+
+    def delTable(self,baseName:str,table_name:str)->bool:
+        '''
+        @func 删除数据表方法
+        :param table_name: 表名称
+        :return: bool
+        '''
+
+        try:
+            if not baseName or not table_name:
+                print('参数不能为空')
+                return False
+
+            sql = f'drop table {baseName}.{table_name};';
+            self.my_cursor.execute(sql)
+            return True
+        except(Exception) as msg:
+            print(msg)
+            return False
+
 
     def analyzeData(self, table_consistant:DataFrame, table_name:str)->str:
         '''
@@ -173,8 +210,10 @@ class initDataBase:
 '''可以打开测试使用'''
 # pro = ts.pro_api('e9a352db1e3bc57734dd5232c058b9e36e4b655f0d0661ea3ecb1b8d')
 # df = pro.index_daily(ts_code='399300.SZ', start_date='20180101', end_date='20181010')
-# s = initDataBase()
-# # vool = s.createDatabase('test_demo')
+s = initDataBase()
+# print(s.delDataBase('test_demo'))
+# print(s.delTable('test_demo','users'))
+# vool = s.createDatabase('test_demo')
 # data1 = s.createTable(baseName='test_demo',tableName='users',table_consistant=df)
 # print(data1)
 if __name__ == '__main__' :
