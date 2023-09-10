@@ -152,45 +152,40 @@ class priceRebound(bt.Strategy):
         #time.sleep(1)
         self.count += 1
         pass
+
     def notify_order(self, order):
-        # 未被处理的订单
+        # 有交易提交/被接受，啥也不做
         if order.status in [order.Submitted, order.Accepted]:
             return
-        # 已经处理的订单
-        if order.status in [order.Completed, order.Canceled, order.Margin]:
+
+        # 检查一个交易是否完成。
+        # 如果钱不够，交易会被拒绝。
+        if order.status in [order.Completed]:
             if order.isbuy():
                 self.log(
-                        'BUY EXECUTED, ref:%.0f,Price: %.2f, Cost: %.2f, Comm %.2f, Size: %.2f, Stock: %s' %
-                        (order.ref, # 订单编号
-                        order.executed.price, # 成交价
-                        order.executed.value, # 成交额
-                        order.executed.comm, # 佣金
-                        order.executed.size, # 成交量
-                        order.data._name)) # 股票名称
-                self.log(f'当前可用资金 : {self.broker.getcash()}')
-                self.log(f'当前总资产 : {self.broker.getvalue()}')
-        
-                for _p in self.broker.positions:
-                    if self.broker.getposition(_p).size > 0:
-                        self.log(f"当前持仓 : {_p._name} 当前持仓量 : {self.broker.getposition(_p).size}, 当前持仓成本 : {self.broker.getposition(_p).price}")
-                #time.sleep(60)
-            else: # Sell
-                
-                self.log('SELL EXECUTED, ref:%.0f, Price: %.2f, Cost: %.2f, Comm %.2f, Size: %.2f, Stock: %s' %
-                            (order.ref,
-                            order.executed.price,
-                            order.executed.value,
-                            order.executed.comm,
-                            order.executed.size,
-                            order.data._name))
-                self.log(f'当前可用资金 : {self.broker.getcash()}')
-                self.log(f'当前总资产 : {self.broker.getvalue()}')
-        
-                for _p in self.broker.positions:
-                    if self.broker.getposition(_p).size > 0:
-                        self.log(f"当前持仓 : {_p._name} 当前持仓量 : {self.broker.getposition(_p).size}, 当前持仓成本 : {self.broker.getposition(_p).price}")
-                #time.sleep(60)
+                    '执行买入, 价格: %.2f, 成本: %.2f, 手续费 %.2f' %
+                    (order.executed.price,
+                     order.executed.value,
+                     order.executed.comm))
+            elif order.issell():
+                self.log(
+                    '执行卖出, 价格: %.2f, 成本: %.2f, 手续费 %.2f' %
+                    (order.executed.price,
+                     order.executed.value,
+                     order.executed.comm))
+
+
+
+        elif order.status in [order.Canceled, order.Margin, order.Rejected]:
+            self.log('交易取消/被拒绝。')
+
     pass
+
+    def notify_trade(self, trade):
+        if not trade.isclosed:
+            return
+        self.log('操作收益%.2f, 成本%.2f' % (trade.pnl, trade.pnlcomm))
+
 
 if __name__ == "__main__":
     # 实例化 cerebro
@@ -218,7 +213,7 @@ if __name__ == "__main__":
         """
         # 导入后复权的数据
         data = bt.feeds.GenericCSVData(
-            dataname=f"/workspaces/stockanalysis/{ts_code}diaryhfq.csv",
+            dataname=f"D:\\code\\stockanalysis\\{ts_code}diaryhfq.csv",
             fromdate=datetime.datetime(2015, 1, 1),
             todate=datetime.datetime(2023, 8, 20),
             nullvalue=0.0,
@@ -278,7 +273,7 @@ if __name__ == "__main__":
     print(result[0].analyzers._SharpeRatio_A.get_analysis())
     
     #绘图
-    #cerebro.plot()
+    cerebro.plot()
     
     #初始化数据
     pass

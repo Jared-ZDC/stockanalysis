@@ -8,8 +8,8 @@ import tushare as ts
 import time
 import _thread
 
-    
-ts.set_token("e9a352db1e3bc57734dd5232c058b9e36e4b655f0d0661ea3ecb1b8d")    
+
+ts.set_token("e9a352db1e3bc57734dd58b9e36e4b655f0d0661ea3ecb1b8d")
 pro = ts.pro_api()
 
 #获取当前的股票信息
