@@ -1,5 +1,10 @@
+# -*- coding: utf-8 -*-
 # 交易系统，封装回测、优化基本过程
+import configparser
+from datetime import datetime
+
 import backtrader as bt
+import pandas
 import quantstats
 import tushare as ts
 import pandas as pd
@@ -12,7 +17,7 @@ from PIL import Image
 import itertools
 import collections
 
-
+os.system('chcp 65001')
 # 设置显示环境
 def init_display():
     pd.set_option('display.max_rows', None)
@@ -24,27 +29,27 @@ def init_display():
 def get_data(code, start_date="20000101", end_date="20201231", adjust="qfq", period="daily", refresh=False):
     def download_data(code):
         try:
-            diary: pd.DataFrame = ts.pro_bar(ts_code=code, adj=adjust, start_date=start_date, end_date=end_date)
+            diary: pd.DataFrame = ts.pro_bar(ts_code=code, adj=adjust, start_date=start_date, end_date=end_date, freq='D')
+            diary = diary.set_index(['trade_date'])
+            diary.index = pd.to_datetime(diary.index, format="%Y%m%d", utc=False)
+            diary.loc[:, 'openinterest'] = 0
+            diary = diary.sort_index()
+            return  diary
         except KeyError:
             print(f"down load {code} error, exit")
             sys.exit(-1)
-        diary.set_index(['trade_date'], drop=False, inplace=True)
-        diary.index = pd.to_datetime(diary.index, format="%Y%m%d", utc=False)
-        diary.loc[:, 'openinterest'] = 0
-        diary.sort_index(inplace=True)
 
-        return diary
-
-    stockfile = "./datas/" + code + ".csv"
+    stockfile = "../data/" + code + ".csv"
     if os.path.exists(stockfile) and refresh == False:
-        stock_data = pd.read_csv(stockfile)
+        #stock_data = pd.read_csv(stockfile)
+        pass
     else:
         stock_data = download_data(code)
         if os.path.exists(stockfile):
             os.system("rm " + stockfile)
         stock_data.to_csv(stockfile, index=True, encoding='utf_8_sig')
 
-    return stock_data
+    return stockfile
 
 
 # A股的交易成本:买入交佣金，卖出交佣金和印花税
@@ -158,42 +163,31 @@ class BackTest():
         self._bdraw = bdraw
         self._param = param
 
+        config = configparser.ConfigParser()
+        config.read('../config/config.properties', encoding="utf-8")
+        self.ts_token = config.get('tushare', 'token')
+        ts.set_token(self.ts_token)
+
     # 回测前准备
     def _before_test(self):
         for code in self._codes:
-            data = get_data(code=code,
+            data_path = get_data(code=code,
                             start_date=self._start_date,
                             end_date=self._end_date,
                             refresh=self._refresh)
-            data = self._datatransform(data, code)
+            data = self._datatransform(data_path, code)
             self._cerebro.adddata(data, name=code)
         self._cerebro.addstrategy(self._strategy, bprint=self._bprint, **self._param)
         self._cerebro.broker.setcash(self._start_cash)
         self._cerebro.broker.addcommissioninfo(self._comminfo)
 
     # 数据转换
-    def _datatransform(self, stock_data, code):
+    def _datatransform(self, data_path, code):
         # 生成datafeed
-        data = bt.feeds.PandasData(
-            dataname=stock_data,
-            name=code,
-            fromdate=stock_data.trade_date[0],
-            todate=stock_data.trade_date[len(stock_data) - 1],
-            nullvalue=0.0,
-            dtformat=('%Y-%m-%d'),
-            datetime='trade_date',
-            open='open',
-            high='high',
-            low='low',
-            close='close',
-            volume='vol',
-            openinterest=-1
-        )
-        """
         data = bt.feeds.GenericCSVData(
-            dataname=f"./datas/{code}.csv",
-            fromdate=pd.to_datetime(self._start_date, format="%Y%m%d", utc=False),
-            todate=pd.to_datetime(self._end_date, format="%Y%m%d", utc=False),
+            dataname=data_path,
+            fromdate=datetime.strptime(self._start_date, '%Y%m%d'),
+            todate=datetime.strptime(self._end_date, '%Y%m%d'),
             nullvalue=0.0,
             dtformat=('%Y-%m-%d'),
             datetime=0,
@@ -204,7 +198,7 @@ class BackTest():
             volume=9,
             openinterest=-1
         )
-        """
+
         return data
 
     # 增加分析器
@@ -230,14 +224,20 @@ class BackTest():
     # 获取回测结果
     def _get_results(self):
         # 计算基准策略收益率
-        self._bk_data = get_data(code=self._bk_code, start_date=self._start_date, end_date=self._end_date,
-                                 refresh=self._refresh)
-        bk_ret = self._bk_data.收盘.pct_change()
+        self._bk_data = pandas.read_csv(get_data(code=self._bk_code, start_date=self._start_date, end_date=self._end_date,
+                                 refresh=self._refresh))
+        self._bk_data = self._bk_data.set_index(['trade_date'])
+        self._bk_data.index = pd.to_datetime(self._bk_data.index, format="%Y-%m-%d", utc=False)
+        self._bk_data.loc[:, 'openinterest'] = 0
+        self._bk_data = self._bk_data.sort_index()
+
+        bk_ret = self._bk_data.close.pct_change()
+        bk_ret.rename('benchmark',inplace=True)
         bk_ret.fillna(0.0, inplace=True)
 
         if self._bdraw:
             self._cerebro.plot(style="candlestick")
-            plt.savefig("./output/" + "backtest_result.jpg")
+            plt.savefig("../output/" + "backtest_result.jpg")
 
         testresults = self._backtest_result(self._results, bk_ret, rf=self._rf)
         end_value = self._cerebro.broker.getvalue()
@@ -347,13 +347,14 @@ class BackTest():
     # 回测报告
     def _make_report(self, returns, bk_ret, rf, filename="report.jpg", title="回测结果", prepare_returns=False):
         # filename = self._code + filename 
-        quantstats.reports.html(returns=returns, benchmark=bk_ret, rf=rf, output='./output/stats.html', title=title,
+        quantstats.reports.html(returns=returns, benchmark=bk_ret, rf=rf, output='../output/stats.html', title=title,
                                 prepare_returns=prepare_returns)
-        imgkit.from_file("./output/stats.html", "./output/" + filename, options={"xvfb": ""})
+        #imgkit.from_file("../output/stats.html", "../output/" + filename, options={"xvfb": ""})
+        imgkit.from_file("../output/stats.html", "../output/" + filename)
         # 压缩图片文件
-        im = Image.open("./output/" + filename)
-        im.save("./output/" + filename)
-        os.system("rm ./output/stats.html")
+        im = Image.open("../output/" + filename)
+        im.save("../output/" + filename)
+        os.system("rm ../output/stats.html")
 
     # 对整个市场的股票进行回测
 
@@ -405,11 +406,11 @@ class Research():
         results.loc[:, ["SQN", "α值", "β值", "交易总次数", "信息比例", "夏普比率", "年化收益率", "收益/成本", "最大回撤", "索提比例", "胜率", "赔率"]].hist(
             bins=100, figsize=(40, 20))
         plt.suptitle("对整个市场回测结果")
-        plt.savefig("./output/market_test.jpg")
+        plt.savefig("../output/market_test.jpg")
 
     # 执行回测    
     def _test(self):
-        result_path = "./output/market_test.csv"
+        result_path = "../output/market_test.csv"
         if os.path.exists(result_path) and self._retest == False:
             self._results = pd.read_csv(result_path, dtype={"股票代码": str})
             return
@@ -533,7 +534,7 @@ class OptStrategy():
         results.loc[:, ["SQN", "α值", "β值", "交易总次数", "信息比例", "夏普比率", "年化收益率", "收益/成本", "最大回撤", "索提比例", "胜率", "赔率"]].hist(
             bins=100, figsize=(40, 20))
         plt.suptitle("策略参数优化结果")
-        plt.savefig("./output/params_optimize.jpg")
+        plt.savefig("../output/params_optimize.jpg")
 
 
 if __name__ == "__main__":
