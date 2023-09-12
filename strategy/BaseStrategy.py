@@ -17,7 +17,7 @@ from PIL import Image
 import itertools
 import collections
 
-os.system('chcp 65001')
+#os.system('chcp 65001')
 # 设置显示环境
 def init_display():
     pd.set_option('display.max_rows', None)
@@ -364,6 +364,7 @@ class Research():
         A股市场回测类
         strategy   回测策略
         code       待回测的股票列表
+        bk_code    benchmark
         start_date 回测开始日期
         end_date   回测结束日期
         highprice  筛选股票池的最高股价
@@ -376,7 +377,7 @@ class Research():
         **params   策略参数
     """
 
-    def __init__(self, strategy, code, start_date, end_date, highprice=sys.float_info.max, lowprice=0.0, min_len=1,
+    def __init__(self, strategy, code,bk_code, start_date, end_date, highprice=sys.float_info.max, lowprice=0.0, min_len=1,
                  start_cash=10000000, retest=False, refresh=False, bdraw=True, **params):
         self._strategy = strategy
         self._start_date = start_date
@@ -390,6 +391,8 @@ class Research():
         self._bdraw = bdraw
         self._params = params
         self._codes = code
+        self._bk_code = bk_code
+        self._results : pd.DataFrame = pd.DataFrame()
 
     # 调用接口
     def run(self):
@@ -412,26 +415,29 @@ class Research():
     def _test(self):
         result_path = "../output/market_test.csv"
         if os.path.exists(result_path) and self._retest == False:
-            self._results = pd.read_csv(result_path, dtype={"股票代码": str})
+            self._results = pd.read_csv(result_path, dtype={"ts_code": str})
             return
 
-        self._results = pd.DataFrame()
+        #self._results = pd.DataFrame()
         n = len(self._codes)
         i = 0
         print("回测整个市场……")
         for code in self._codes:
             i += 1
             print("回测进度:", i / n)
-            data = get_data(code=code,
+            data_path = get_data(code=code,
                             start_date=self._start_date,
                             end_date=self._end_date,
                             refresh=True)
-            if len(data) <= self._min_len or (data.收盘 < 0.0).sum() > 0:
+
+            data = pandas.read_csv(data_path)
+
+            if len(data) <= self._min_len or (data.close < 0.0).sum() > 0:
                 continue
-            backtest = BackTest(strategy=self._strategy, codes=[code], start_date=self._start_date,
+            backtest = BackTest(strategy=self._strategy, codes=[code], bk_code=self._bk_code,start_date=self._start_date,
                                 end_date=self._end_date, start_cash=self._start_cash, refresh=True, **self._params)
             res = backtest.run()
-            self._results = self._results.append(res, ignore_index=True)
+            self._results = pd.concat([self._results, pd.DataFrame([res])], ignore_index=True)
         self._results.to_csv(result_path)
         return
 
@@ -457,6 +463,7 @@ class OptStrategy():
 
     def __init__(self, codes, strategy, start_date, end_date, bk_code="000300", min_len=1, start_cash=10000000,
                  retest=False, refresh=False, bprint=False, bdraw=True, **params):
+        self._results : pd.DataFrame = pd.DataFrame()
         self._codes = codes
         self._bk_code = bk_code
         self._strategy = strategy
@@ -489,7 +496,7 @@ class OptStrategy():
                 bdraw=self._bdraw,
                 **param[0])
             res = backtest.run()
-            self._results = self._results.append(res, ignore_index=True)
+            self._results = pd.concat([self._results, pd.DataFrame([res])], ignore_index=True)
             optparams.append(param[0])
         self._results["参数"] = optparams
         self._draw(self._results)
@@ -503,7 +510,7 @@ class OptStrategy():
         for elem in iterable:
             if isinstance(elem, str):
                 elem = (elem,)
-            elif not isinstance(elem, collections.Iterable):
+            elif not isinstance(elem, collections.abc.Iterable):
                 elem = (elem,)
             niterable.append(elem)
         return niterable

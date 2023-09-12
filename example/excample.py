@@ -115,7 +115,7 @@ def back_test():
 # 对整个市场进行回测
 def do_research():
     bs.init_display()
-    research = bs.Research(MyStrategy, start_date="20150101", end_date="20210101", min_len=100, retest=False,
+    research = bs.Research(MyStrategy,code = ["600036.SH","000858.SZ"],bk_code="600027.SH" ,start_date="20150101", end_date="20210101", min_len=100, retest=True,
                            refresh=False, maperiod=19)
     results = research.run()
     print(results.head(), results.describe())
@@ -127,8 +127,8 @@ def do_opt():
     bs.init_display()
     map = range(2, 20)
     opt = bs.OptStrategy(
-        codes=["513100"],
-        bk_code="000300",
+        codes=["600036.SH"],
+        bk_code="000858.SZ",
         strategy=MyStrategy,
         start_date="20160101",
         end_date="20211231",
@@ -144,6 +144,6 @@ def do_opt():
 
 
 if __name__ == "__main__":
-    back_test()
-    # do_research()
-    # do_opt()
+    #back_test()
+    #do_research()
+    do_opt()
