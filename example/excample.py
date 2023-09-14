@@ -4,7 +4,7 @@
 
 import strategy.BaseStrategy as bs
 import backtrader as bt
-
+import jqdatapy
 
 
 # 实际的策略类
@@ -96,7 +96,7 @@ def back_test():
     backtest = bs.BackTest(
         strategy=HoldStrategy,
         codes=["600027.SH"],
-        bk_code="600036.SH",
+        bk_code="000300.SH",
         start_date="20160101",
         end_date="20230831",
         rf=0.03,
@@ -128,7 +128,7 @@ def do_opt():
     map = range(2, 20)
     opt = bs.OptStrategy(
         codes=["600036.SH"],
-        bk_code="000858.SZ",
+        bk_code="000300.SZ",
         strategy=MyStrategy,
         start_date="20160101",
         end_date="20211231",
@@ -144,6 +144,7 @@ def do_opt():
 
 
 if __name__ == "__main__":
-    #back_test()
+    back_test()
     #do_research()
-    do_opt()
+    #do_opt()
+    pass

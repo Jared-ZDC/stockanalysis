@@ -20,19 +20,34 @@ import collections
 #os.system('chcp 65001')
 # 设置显示环境
 def init_display():
+    """
+    @func: 设置显示环境
+    """
     pd.set_option('display.max_rows', None)
     pd.set_option('display.max_columns', None)
     plt.rcParams['font.sans-serif'] = ['SimHei']
 
 
 # 获取数据
-def get_data(code, start_date="20000101", end_date="20201231", adjust="qfq", period="daily", refresh=False):
+def get_data(code, start_date="20000101", end_date="20201231", adjust="qfq", period="daily", refresh=False, type = "stock"):
+    """
+    @func: 获取远端数据或者本地数据路径
+    """
+    pro = ts.pro_api()
+
     def download_data(code):
         try:
-            diary: pd.DataFrame = ts.pro_bar(ts_code=code, adj=adjust, start_date=start_date, end_date=end_date, freq='D')
+            diary: pd.DataFrame = pd.DataFrame()
+            if type == "stock" : #股票
+                diary: pd.DataFrame = ts.pro_bar(ts_code=code, adj=adjust, start_date=start_date, end_date=end_date, freq='D')
+            elif type == "index" : #指数大盘
+                diary: pd.DataFrame = pro.index_daily(ts_code=code, start_date=start_date, end_date=end_date)
+            else:
+                pass
+            diary.loc[:, 'openinterest'] = 0
             diary = diary.set_index(['trade_date'])
             diary.index = pd.to_datetime(diary.index, format="%Y%m%d", utc=False)
-            diary.loc[:, 'openinterest'] = 0
+#            diary.loc[:, 'openinterest'] = 0
             diary = diary.sort_index()
             return  diary
         except KeyError:
@@ -41,15 +56,15 @@ def get_data(code, start_date="20000101", end_date="20201231", adjust="qfq", per
 
     stockfile = "../data/" + code + ".csv"
     if os.path.exists(stockfile) and refresh == False:
-        #stock_data = pd.read_csv(stockfile)
+        data = pd.read_csv(stockfile)
         pass
     else:
-        stock_data = download_data(code)
+        data = download_data(code)
         if os.path.exists(stockfile):
             os.system("rm " + stockfile)
-        stock_data.to_csv(stockfile, index=True, encoding='utf_8_sig')
+        data.to_csv(stockfile, index=True, encoding='utf_8_sig')
 
-    return stockfile
+    return stockfile,data
 
 
 # A股的交易成本:买入交佣金，卖出交佣金和印花税
@@ -171,7 +186,7 @@ class BackTest():
     # 回测前准备
     def _before_test(self):
         for code in self._codes:
-            data_path = get_data(code=code,
+            data_path,_ = get_data(code=code,
                             start_date=self._start_date,
                             end_date=self._end_date,
                             refresh=self._refresh)
@@ -224,10 +239,13 @@ class BackTest():
     # 获取回测结果
     def _get_results(self):
         # 计算基准策略收益率
-        self._bk_data = pandas.read_csv(get_data(code=self._bk_code, start_date=self._start_date, end_date=self._end_date,
-                                 refresh=self._refresh))
-        self._bk_data = self._bk_data.set_index(['trade_date'])
-        self._bk_data.index = pd.to_datetime(self._bk_data.index, format="%Y-%m-%d", utc=False)
+        _,self._bk_data =  get_data(code=self._bk_code,
+                            start_date=self._start_date,
+                            end_date=self._end_date,
+                            refresh=self._refresh, type = "index")
+        if self._bk_data.index.name != 'trade_date' :
+            self._bk_data = self._bk_data.set_index(['trade_date'])
+            self._bk_data.index = pd.to_datetime(self._bk_data.index, format="%Y-%m-%d", utc=False)
         self._bk_data.loc[:, 'openinterest'] = 0
         self._bk_data = self._bk_data.sort_index()
 
@@ -425,12 +443,10 @@ class Research():
         for code in self._codes:
             i += 1
             print("回测进度:", i / n)
-            data_path = get_data(code=code,
+            data_path,data = get_data(code=code,
                             start_date=self._start_date,
                             end_date=self._end_date,
                             refresh=True)
-
-            data = pandas.read_csv(data_path)
 
             if len(data) <= self._min_len or (data.close < 0.0).sum() > 0:
                 continue
